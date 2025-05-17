@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Three.js Platformer</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #info { position: absolute; top: 10px; left: 10px; color: #fff; font-family: sans-serif; z-index: 100; }
+  </style>
+</head>
+<body>
+  <div id="info">Move: A/D or ←/→ &nbsp; Jump: W/↑/Space</div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 10, 5);
+    scene.add(light);
+
+    const groundGeom = new THREE.BoxGeometry(20, 1, 10);
+    const groundMat = new THREE.MeshPhongMaterial({ color: 0x228b22 });
+    const ground = new THREE.Mesh(groundGeom, groundMat);
+    ground.position.y = -0.5;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const platformGeom = new THREE.BoxGeometry(5, 0.5, 5);
+    const platformMat = new THREE.MeshPhongMaterial({ color: 0x8b4513 });
+    const platforms = [];
+
+    function addPlatform(x, y, z) {
+      const p = new THREE.Mesh(platformGeom, platformMat);
+      p.position.set(x, y, z);
+      p.receiveShadow = true;
+      scene.add(p);
+      platforms.push(p);
+    }
+
+    addPlatform(0, 2, 0);
+    addPlatform(4, 4, 0);
+    addPlatform(8, 6, 0);
+
+    const goalGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const goalMat = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+    const goal = new THREE.Mesh(goalGeom, goalMat);
+    goal.position.set(8, 7, 0);
+    scene.add(goal);
+
+    const playerGeom = new THREE.BoxGeometry(1, 1, 1);
+    const playerMat = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+    const player = new THREE.Mesh(playerGeom, playerMat);
+    player.position.y = 0.5;
+    player.castShadow = true;
+    scene.add(player);
+
+    camera.lookAt(player.position);
+
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.code] = true; });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    const velocity = { x: 0, y: 0 };
+    const speed = 0.1;
+    const jump = 0.25;
+    const gravity = 0.01;
+    let onGround = false;
+
+    function update() {
+      if (keys['ArrowLeft'] || keys['KeyA']) {
+        velocity.x = -speed;
+      } else if (keys['ArrowRight'] || keys['KeyD']) {
+        velocity.x = speed;
+      } else {
+        velocity.x = 0;
+      }
+
+      if ((keys['ArrowUp'] || keys['KeyW'] || keys['Space']) && onGround) {
+        velocity.y = jump;
+        onGround = false;
+      }
+
+      velocity.y -= gravity;
+      player.position.x += velocity.x;
+      player.position.y += velocity.y;
+
+      if (player.position.y < 0.5) {
+        player.position.y = 0.5;
+        velocity.y = 0;
+        onGround = true;
+      }
+
+      const playerBox = new THREE.Box3().setFromObject(player);
+      for (const p of platforms) {
+        const platformBox = new THREE.Box3().setFromObject(p);
+        if (playerBox.intersectsBox(platformBox) && velocity.y <= 0 && player.position.y > p.position.y) {
+          player.position.y = p.position.y + 0.75;
+          velocity.y = 0;
+          onGround = true;
+        }
+      }
+
+      const goalBox = new THREE.Box3().setFromObject(goal);
+      if (playerBox.intersectsBox(goalBox)) {
+        document.getElementById('info').textContent = 'You win!';
+      }
+
+      camera.position.x = player.position.x;
+      camera.lookAt(player.position);
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(update);
+    }
+
+    update();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
