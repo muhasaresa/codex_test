@@ -1,1 +1,11 @@
+# Platformer Game
 
+This repository contains a very simple platformer game implemented in a single
+`index.html` file using [three.js](https://threejs.org/).
+
+## How to Play
+
+Open `index.html` in a modern web browser. Use the arrow keys or `A`/`D` to move
+left and right. Press `W`, `Arrow Up`, or `Space` to jump. Reach the yellow cube
+to win the game. You can land on multiple platforms to make your way to the
+goal.
